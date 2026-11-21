@@ -83,4 +83,4 @@ examples/              sample setup-todo-list.md
 
 The audit workflow runs on every push, on pull requests, and weekly. It checks the example lists against format v1 (including `bash -n` on every `check`, and that the agent block matches the canonical one in format.md), the plugin, marketplace and skill (`claude plugin validate --strict`), relative links, and that ADOPT.md's download URLs resolve.
 
-ADOPT.md downloads the skill from an exact release tag (currently **`v1.1.0`**), so adopting projects never pick up unreleased changes, and tags are never moved. To release: bump `version` in `.claude-plugin/plugin.json`, update the tag in ADOPT.md's two URLs, commit, then tag `vX.Y.Z` and push the branch and the tag together (`git push origin main vX.Y.Z`).
+ADOPT.md downloads the skill from an exact release tag (currently **`v1.1.1`**), so adopting projects never pick up unreleased changes, and tags are never moved. To release: bump `version` in `.claude-plugin/plugin.json`, update the tag in ADOPT.md's two URLs, commit, then tag `vX.Y.Z` and push the branch and the tag together (`git push origin main vX.Y.Z`).
