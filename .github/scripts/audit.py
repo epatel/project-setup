@@ -4,8 +4,9 @@
 Checks:
   1. every setup-todo-list*.md (except .local) follows format v1
   2. every check command is valid shell syntax (bash -n)
-  3. SKILL.md frontmatter has name (matching its folder) and description
-  4. plugin / marketplace JSON parses and has required fields
+  3. each setup list's agent blockquote matches the canonical one in format.md
+  4. example progress files (*.local.md) use the progress-line format
+     (plugin, marketplace and SKILL.md are checked by `claude plugin validate`)
   5. relative links in *.md resolve
   6. raw.githubusercontent.com URLs in ADOPT.md point at files that exist here
 
@@ -13,7 +14,6 @@ Exit 1 with a list of problems, 0 when clean.
 """
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 import sys
@@ -126,40 +126,48 @@ def audit_setup_list(path: Path) -> None:
                     bad(path, f"{where} check is not valid shell: {r.stderr.strip()}")
 
 
-# --------------------------------------------------------------------- 3
-def audit_skills() -> None:
-    skills = list(ROOT.glob("skills/*/SKILL.md")) + list(ROOT.glob(".claude/skills/*/SKILL.md"))
-    if not skills:
-        bad("skills/", "no SKILL.md found")
-    for p in skills:
-        fm = frontmatter(p.read_text(encoding="utf-8")) or {}
-        if fm.get("name") != p.parent.name:
-            bad(p, f"frontmatter name '{fm.get('name')}' must match folder '{p.parent.name}'")
-        if len(fm.get("description", "")) < 40:
-            bad(p, "frontmatter description missing or too short")
+# --------------------------------------------------------------------- 3 + 4
+FORMAT = ROOT / "skills/project-setup/references/format.md"
+PROGRESS = re.compile(
+    r"^- ([a-z0-9]+(?:-[a-z0-9]+)*): (pending|n/a|(?:done|skipped|failed) @rev[1-9]\d* \d{4}-\d{2}-\d{2})( — .+)?$"
+)
 
 
-# --------------------------------------------------------------------- 4
-def audit_manifests() -> None:
-    plugin = ROOT / ".claude-plugin/plugin.json"
-    market = ROOT / ".claude-plugin/marketplace.json"
-    for p, required in ((plugin, ["name"]), (market, ["name", "owner", "plugins"])):
-        if not p.exists():
-            bad(p, "missing")
-            continue
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as e:
-            bad(p, f"invalid JSON: {e}")
-            continue
-        for k in required:
-            if k not in data:
-                bad(p, f"missing required field '{k}'")
-        if p == market:
-            for i, entry in enumerate(data.get("plugins", [])):
-                for k in ("name", "source"):
-                    if k not in entry:
-                        bad(p, f"plugins[{i}] missing '{k}'")
+def blockquote(text: str) -> str:
+    return "\n".join(l for l in text.splitlines() if l.startswith(">"))
+
+
+def audit_canonical_block(path: Path) -> None:
+    canon = blockquote(FORMAT.read_text(encoding="utf-8"))
+    if blockquote(path.read_text(encoding="utf-8")) != canon:
+        bad(path, "agent blockquote differs from the canonical block in format.md")
+
+
+def step_ids(path: Path) -> list[str]:
+    return re.findall(r"^## \[([^\]]+)\]", path.read_text(encoding="utf-8"), re.M)
+
+
+def audit_progress(path: Path) -> None:
+    text = path.read_text(encoding="utf-8")
+    fm = frontmatter(text) or {}
+    for k in ("setup-progress", "master-commit", "last-doctor"):
+        if k not in fm:
+            bad(path, f"frontmatter missing '{k}'")
+    seen = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith("- "):
+            m = PROGRESS.match(line)
+            if not m:
+                bad(path, f"line {n}: not a valid progress line: {line!r}")
+            else:
+                seen.append(m.group(1))
+    master = path.with_name(path.name.replace(".local.md", ".md"))
+    if master.exists():
+        ids = step_ids(master)
+        if missing := [i for i in ids if i not in seen]:
+            bad(path, f"no progress line for steps {missing}")
+        if extra := [i for i in seen if i not in ids]:
+            bad(path, f"progress lines for unknown steps {extra}")
 
 
 # --------------------------------------------------------------------- 5 + 6
@@ -195,15 +203,16 @@ def main() -> int:
         bad("examples/", "no setup-todo-list*.md to audit")
     for p in lists:
         audit_setup_list(p)
-    audit_skills()
-    audit_manifests()
+        audit_canonical_block(p)
+    for p in [p for p in md_files() if p.name.endswith(".local.md")]:
+        audit_progress(p)
     audit_links()
     if problems:
         print(f"Audit found {len(problems)} problem(s):")
         for msg in problems:
             print(f"  ✗ {msg}")
         return 1
-    print(f"Audit clean: {len(lists)} setup list(s), skills, manifests, links.")
+    print(f"Audit clean: {len(lists)} setup list(s), progress files, links.")
     return 0
 
 

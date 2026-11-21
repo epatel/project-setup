@@ -5,13 +5,15 @@ project: example-flutter-app
 
 # Project setup
 
-> **Agents:** copy this file to `setup-todo-list.local.md` (it is gitignored)
-> and work through the steps in order. In the copy, add `- status: done @revN <date>`
-> (or `skipped` / `failed` with a reason) under each step as you go.
-> Respect `gate`: `auto` = just run it, `approve` = show the commands and
-> wait for a yes, `input` = ask for the listed values first. Never write secrets
-> into either file. To re-check later ("doctor"), compare the copy with this file
-> by step id and `rev`, and re-run each `check` command.
+> **Agents:** set this project up by working through the steps below in order.
+> Record progress in `setup-todo-list.local.md` (gitignored), one line per step:
+> `- <id>: done @rev<N> <date>`, or `skipped` / `failed` with a reason.
+> Respect each step's `gate`: `auto` = just run it, `approve` = show the commands
+> and wait for a yes, `input` = ask for the listed values first. Run a step's
+> `check` first; if it passes, the step is already done (for `input` steps,
+> still confirm the value). Never write secrets into either file. To re-check
+> later ("doctor"), compare the progress lines with this file by id and `rev`,
+> and re-run the checks.
 >
 > **Humans:** every step below is plain instructions. Follow them by hand if you prefer.
 
