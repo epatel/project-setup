@@ -22,8 +22,7 @@ If `setup-todo-list.md` is missing, offer **author** mode. Don't make up steps.
 1. **Prepare the local copy.**
    - If `setup-todo-list.local.md` doesn't exist, copy the master file verbatim, add the local frontmatter (`local-copy-of`, `copied-at`), and add `- status: pending` to every step.
    - Make sure `setup-todo-list.local.md` is in `.gitignore`. If it isn't, add it, and tell the user you did.
-   - Fastest path: run `scripts/setup_doctor.py --reconcile --json`. It creates the local copy when missing, or reconciles an existing one, and returns every step's state. That JSON is your plan.
-   - If the local file already exists, run the **doctor reconciliation** first so it matches the master. Then continue with whatever is not done. Steps reported as `satisfied-unrecorded` only need their status recorded.
+   - If the local file already exists and the master has changed since `last-doctor` (see the cheap test in doctor mode), do the **doctor reconciliation** (steps 1–2) first. Then continue with whatever is not done.
 2. **Show the plan** as a short table: id, title, gate, required, current status. Group steps that need approval or input so the user can see what's coming. Ask once whether to go ahead.
 3. **Work through steps in file order**, respecting `depends` and `platforms`. For each step:
    1. If it has a `check`, run it first. If it exits 0, mark the step `done @revN` without running anything ("already satisfied").
@@ -46,19 +45,13 @@ If `setup-todo-list.md` is missing, offer **author** mode. Don't make up steps.
 
 Changes nothing, apart from updating `last-doctor` and the reconciliation bookkeeping in the local file. Runs no step actions.
 
-**Use the bundled script.** It is deterministic: never compare the two files by eye when the script can run. From the project root:
+**Run it only when it's needed.** Setup lists change rarely. Never run doctor on your own initiative: not at session start, not after every pull, not as a first reaction to a build error. Run it only when:
+- the user asks, or
+- the user just pulled and `setup-todo-list.md` may have changed.
 
-```bash
-python3 <this-skill-dir>/scripts/setup_doctor.py --reconcile          # human report
-python3 <this-skill-dir>/scripts/setup_doctor.py --reconcile --json   # for you to parse
-```
+If a failure clearly points at missing tooling, *suggest* a doctor run rather than starting one.
 
-- `--reconcile` rewrites the local copy to match the master. It adds new steps as `pending`, marks removed ones `obsolete`, refreshes fields and text, keeps the `status` and `answer` lines, and sets `last-doctor`. It never marks anything `done`. Leave it off for a pure read-only report.
-- `--no-checks` skips running the `check` commands. Before the first doctor run in a repo you don't know, read its `check` commands. If any look like they modify anything, ask the user, or use `--no-checks`.
-- Exit code: `0` clean, `1` issues `[✗]`, `2` only updates `[!]`, `3` parse error. On `3`, show the error and suggest a fix to the master file.
-- Show the user the script's report as-is. In run mode, use the `--json` `steps[].reason` values (`new`, `changed`, `drift`, `failed`, `pending`, `satisfied-unrecorded`, …) to decide what to do next.
-
-If `python3` is not available, fall back to the manual procedure:
+**Cheap test first.** Run `git log -1 --format=%cs -- setup-todo-list.md` and compare the date with `last-doctor` in the local copy. If the master hasn't been committed since then, say "Setup list unchanged since last doctor (<date>)" and stop, unless the user explicitly asked for a full check, which also re-runs the checks to catch drift.
 
 1. **Parse both files.** Match steps by `[id]`.
 2. **Reconcile structure** using the comparison table in `references/format.md`:
@@ -66,6 +59,8 @@ If `python3` is not available, fall back to the manual procedure:
    - step removed from master → mark it `obsolete` in the local file and don't delete it
    - master `rev` > the status's `@rev` → flag it as changed
    - copy updated titles, fields and instructions from master into the local file, keeping the `status` and `answer` lines
+   - set `last-doctor` to today
+   - never mark a step `done` during reconciliation
 3. **Re-verify**: run the `check` for every `done` step to detect drift. Checks must be read-only. If a check looks like it modifies anything, don't run it, and report it to the user.
 4. **Report**:
 

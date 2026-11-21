@@ -70,6 +70,8 @@ It's a verbatim copy of the master file with:
    copied-at: 2026-11-21
    last-doctor: 2026-11-21
    ```
+   `last-doctor` is compared with the master's last commit date
+   (`git log -1 --format=%cs -- setup-todo-list.md`) to skip doctor runs when nothing changed.
 2. A `- status:` line added to every step, right after its header fields:
    ```
    - status: done @rev2 2026-11-21
@@ -84,8 +86,6 @@ It's a verbatim copy of the master file with:
 `@revN` records which revision of the step the status applies to. That is what lets doctor see that the master file has moved on.
 
 ## Doctor comparison rules
-
-`scripts/setup_doctor.py` implements these rules exactly (Python 3 stdlib only, exit codes 0/1/2/3). It also handles two cases not shown in the table: a `pending` or `failed` step whose check passes is reported `[✓]` as "satisfied, but status is pending", and a `n/a` step whose platform list now includes this machine is reported `[!]`. The script is the reference implementation, so if the table and the script ever disagree, fix whichever one is wrong.
 
 For each step id in master ∪ local:
 

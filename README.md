@@ -36,26 +36,21 @@ Pick one:
 | `/project-setup doctor` or "check my setup" | Report only: new or changed steps plus drift |
 | `/project-setup author` or "make a setup list for this repo" | Drafts `setup-todo-list.md` from the README, CI, `.env.example`, etc. |
 
-## Deterministic doctor script
+## How often to run doctor
 
-The skill runs `.claude/skills/project-setup/scripts/setup_doctor.py` instead of comparing the files by eye. It needs Python 3 and nothing else, and it works without any AI:
+Rarely. Setup steps seldom change, and the agent is told never to run doctor on its own.
 
-```bash
-python3 .claude/skills/project-setup/scripts/setup_doctor.py              # report, runs checks
-python3 .claude/skills/project-setup/scripts/setup_doctor.py --reconcile  # also sync the local copy
-python3 .claude/skills/project-setup/scripts/setup_doctor.py --json       # machine-readable
-python3 .claude/skills/project-setup/scripts/setup_doctor.py --no-checks  # don't execute check commands
-```
+- **Normally:** only when you ask for it.
+- **Cheap skip:** the agent compares `last-doctor` in the local copy with the master's last commit date (`git log -1 --format=%cs -- setup-todo-list.md`). If the master hasn't changed since, it stops there.
+- **After a pull**, an optional hook that costs nothing unless the list file changed:
 
-Exit codes: `0` all good, `1` something is broken or not done, `2` only new or changed steps, `3` parse error in the list. That makes it usable in a `post-merge` git hook or CI, for example to fail if `setup-todo-list.md` doesn't parse:
+  ```bash
+  # .githooks/post-merge
+  git diff --quiet ORIG_HEAD HEAD -- setup-todo-list.md ||
+    echo "setup-todo-list.md changed — consider: setup doctor"
+  ```
 
-```bash
-# .githooks/post-merge — nudge after every pull
-python3 .claude/skills/project-setup/scripts/setup_doctor.py --no-checks >/dev/null
-[ $? -eq 2 ] && echo "setup-todo-list.md changed — run: setup doctor"
-```
-
-`check` commands come from the repo and run through your shell. Use `--no-checks` on repositories you don't trust.
+`check` commands come from the repo and run through your shell. On a repo you don't trust, read them before letting an agent run doctor.
 
 ## Adopting in a repo
 
@@ -71,7 +66,7 @@ python3 .claude/skills/project-setup/scripts/setup_doctor.py --no-checks >/dev/n
 4. Add to CLAUDE.md / AGENTS.md:
    ```markdown
    Project setup lives in setup-todo-list.md (progress in the gitignored setup-todo-list.local.md).
-   If a command fails because of missing tooling, run setup doctor before debugging.
+   Don't run setup doctor unless asked; if a failure looks like missing tooling, suggest it.
    ```
 
 ## Maintainer rules
