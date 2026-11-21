@@ -1,0 +1,8 @@
+{
+  "name": "project-setup",
+  "version": "1.0.0",
+  "description": "AI-runnable project setup: run setup-todo-list.md with approval/input gates, re-check doctor-style, or author a list for a repo.",
+  "author": { "name": "epatel" },
+  "license": "MIT",
+  "keywords": ["setup", "onboarding", "doctor", "skill"]
+}

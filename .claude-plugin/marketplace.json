@@ -1,0 +1,14 @@
+{
+  "name": "epatel",
+  "owner": {
+    "name": "epatel"
+  },
+  "description": "epatel's Claude Code plugins",
+  "plugins": [
+    {
+      "name": "project-setup",
+      "source": "./",
+      "description": "AI-runnable project setup from setup-todo-list.md (run, doctor, author)."
+    }
+  ]
+}

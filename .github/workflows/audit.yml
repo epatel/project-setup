@@ -1,0 +1,43 @@
+name: Audit
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly: catch validator/schema changes upstream
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Audit setup lists, skill, manifests, links
+        run: python3 .github/scripts/audit.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate plugin and marketplace (claude plugin validate)
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude --version
+          claude plugin validate . --strict
+
+      - name: Check ADOPT.md raw URLs resolve on GitHub
+        if: github.event_name != 'pull_request'
+        run: |
+          status=0
+          for url in $(grep -oE 'https://raw\.githubusercontent\.com/epatel/project-setup/[^ )`|]+' ADOPT.md | sort -u); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            echo "$code $url"
+            [ "$code" = "200" ] || status=1
+          done
+          exit $status
