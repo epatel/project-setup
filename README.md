@@ -41,7 +41,7 @@ Pick one:
 Rarely. Setup steps seldom change, and the agent is told never to run doctor on its own.
 
 - **Normally:** only when you ask for it.
-- **Cheap skip:** the agent compares `last-doctor` in the local copy with the master's last commit date (`git log -1 --format=%cs -- setup-todo-list.md`). If the master hasn't changed since, it stops there.
+- **Cheap skip:** the local copy records `master-commit`, the master's last commit hash at the last sync. If `git log -1 --format=%h -- setup-todo-list.md` still matches and there are no uncommitted edits, the agent stops there.
 - **After a pull**, an optional hook that costs nothing unless the list file changed:
 
   ```bash

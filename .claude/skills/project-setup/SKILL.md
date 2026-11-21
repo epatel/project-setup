@@ -20,12 +20,12 @@ If `setup-todo-list.md` is missing, offer **author** mode. Don't make up steps.
 ## Mode: run
 
 1. **Prepare the local copy.**
-   - If `setup-todo-list.local.md` doesn't exist, copy the master file verbatim, add the local frontmatter (`local-copy-of`, `copied-at`), and add `- status: pending` to every step.
+   - If `setup-todo-list.local.md` doesn't exist, copy the master file verbatim, add the local frontmatter (`local-copy-of`, `copied-at`, `last-doctor`, `master-commit`), and add `- status: pending` to every step.
    - Make sure `setup-todo-list.local.md` is in `.gitignore`. If it isn't, add it, and tell the user you did.
-   - If the local file already exists and the master has changed since `last-doctor` (see the cheap test in doctor mode), do the **doctor reconciliation** (steps 1–2) first. Then continue with whatever is not done.
+   - If the local file already exists and the master has changed since `master-commit` (see the cheap test in doctor mode), do the **doctor reconciliation** (steps 1–2) first. Then continue with whatever is not done.
 2. **Show the plan** as a short table: id, title, gate, required, current status. Group steps that need approval or input so the user can see what's coming. Ask once whether to go ahead.
 3. **Work through steps in file order**, respecting `depends` and `platforms`. For each step:
-   1. If it has a `check`, run it first. If it exits 0, mark the step `done @revN` without running anything ("already satisfied").
+   1. If it has a `check`, run it first. If it exits 0, mark the step `done @revN` without running anything ("already satisfied"). **Exception: `input` steps.** A passing check only shows that *some* value is in place, not that it's the one the user wants. Still ask, and show the current value as the default.
    2. Handle the gate:
       - `auto`: run it.
       - `approve`: show the exact commands and what they change, then wait for yes, skip, or stop.
@@ -51,7 +51,7 @@ Changes nothing, apart from updating `last-doctor` and the reconciliation bookke
 
 If a failure clearly points at missing tooling, *suggest* a doctor run rather than starting one.
 
-**Cheap test first.** Run `git log -1 --format=%cs -- setup-todo-list.md` and compare the date with `last-doctor` in the local copy. If the master hasn't been committed since then, say "Setup list unchanged since last doctor (<date>)" and stop, unless the user explicitly asked for a full check, which also re-runs the checks to catch drift.
+**Cheap test first.** Compare `git log -1 --format=%h -- setup-todo-list.md` with `master-commit` in the local copy, and check `git diff --quiet HEAD -- setup-todo-list.md` for uncommitted edits. If the hash matches and there are no edits, say "Setup list unchanged since last doctor (<last-doctor>)" and stop, unless the user explicitly asked for a full check, which also re-runs the checks to catch drift. Use the commit hash, not a date: several changes can land on the same day.
 
 1. **Parse both files.** Match steps by `[id]`.
 2. **Reconcile structure** using the comparison table in `references/format.md`:
@@ -59,7 +59,7 @@ If a failure clearly points at missing tooling, *suggest* a doctor run rather th
    - step removed from master → mark it `obsolete` in the local file and don't delete it
    - master `rev` > the status's `@rev` → flag it as changed
    - copy updated titles, fields and instructions from master into the local file, keeping the `status` and `answer` lines
-   - set `last-doctor` to today
+   - set `last-doctor` to today and `master-commit` to the master's current last-commit hash
    - never mark a step `done` during reconciliation
 3. **Re-verify**: run the `check` for every `done` step to detect drift. Checks must be read-only. If a check looks like it modifies anything, don't run it, and report it to the user.
 4. **Report**:
@@ -84,6 +84,8 @@ Put the issues first if the list is long. If everything is `[✓]`, say "No issu
 Helps a maintainer create or update `setup-todo-list.md`.
 
 1. Gather the setup instructions from the README, CONTRIBUTING, docs/, Makefile / package.json scripts, `.tool-versions`, `.nvmrc`, `pubspec.yaml`, Dockerfiles, `.env.example`, and CI config. CI shows what the project really needs.
+   - Look for setup the README leaves out: path dependencies and sibling checkouts (`path: ../…` in pubspec/package.json/Cargo/go.mod), git submodules, config files the build expects but that aren't in the repo, and per-developer config switching (e.g. `make set_*_config`).
+   - Compare the README with reality and point out stale steps (e.g. a documented generator command that committed files have replaced). Suggest a README fix rather than copying the stale step.
 2. Draft the steps in the v1 format:
    - one step per verifiable outcome, each with a `check` command wherever possible (version greps, file exists, `command -v`, a dry-run)
    - choose gates conservatively: `auto` only for read-only or project-local and reversible steps

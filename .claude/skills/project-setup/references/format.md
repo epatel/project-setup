@@ -69,9 +69,9 @@ It's a verbatim copy of the master file with:
    local-copy-of: setup-todo-list.md
    copied-at: 2026-11-21
    last-doctor: 2026-11-21
+   master-commit: 3f2a9c1   # git log -1 --format=%h -- setup-todo-list.md, at last copy/reconcile
    ```
-   `last-doctor` is compared with the master's last commit date
-   (`git log -1 --format=%cs -- setup-todo-list.md`) to skip doctor runs when nothing changed.
+   `master-commit` lets doctor skip its run when the master hasn't changed: same hash and no uncommitted edits.
 2. A `- status:` line added to every step, right after its header fields:
    ```
    - status: done @rev2 2026-11-21
