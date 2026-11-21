@@ -23,13 +23,18 @@ The agent copies the skill into `.claude/skills/project-setup/`, reads the repo 
 
 ## Install the skill for yourself (Claude Code plugin)
 
-So that `/project-setup` is available in every repo, including ones that haven't adopted it yet:
+So that `/project-setup` is available in every repo, including ones that haven't adopted it yet, run these from a shell:
 
-```
-/plugin install project-setup --marketplace epatel/project-setup
+```bash
+claude plugin marketplace add epatel/project-setup
+claude plugin install project-setup@epatel --scope user
 ```
 
-Or from a shell: `claude plugin marketplace add epatel/project-setup && claude plugin install project-setup@epatel`. Update later with `claude plugin update project-setup@epatel`.
+`--scope user` makes it available everywhere. Without it, the plugin is installed only for the project you're in.
+
+- **Check it:** `claude plugin list` should show `project-setup@epatel`, its version, and `Scope: user`.
+- **Update later:** `claude plugin update project-setup@epatel`.
+- **In-session alternative:** `/plugin install project-setup --marketplace epatel/project-setup`. The first run may only add the marketplace, so run it again (or confirm in `/plugin`) until it says "Installed". It installs for the current project unless you pick the user scope.
 
 ## The idea
 
