@@ -16,8 +16,8 @@ Download these files into the repo, keeping the paths:
 
 | Save as | Download from |
 |---|---|
-| `.claude/skills/project-setup/SKILL.md` | https://raw.githubusercontent.com/epatel/project-setup/v1/skills/project-setup/SKILL.md |
-| `.claude/skills/project-setup/references/format.md` | https://raw.githubusercontent.com/epatel/project-setup/v1/skills/project-setup/references/format.md |
+| `.claude/skills/project-setup/SKILL.md` | https://raw.githubusercontent.com/epatel/project-setup/v1.1.0/skills/project-setup/SKILL.md |
+| `.claude/skills/project-setup/references/format.md` | https://raw.githubusercontent.com/epatel/project-setup/v1.1.0/skills/project-setup/references/format.md |
 
 If you can't write files there, read both files from the URLs instead and continue.
 
